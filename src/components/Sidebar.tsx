@@ -16,11 +16,11 @@ import clsx from 'clsx';
 
 const navItems = [
   { label: 'Dashboard', href: '/', icon: FileText },
-  { label: 'Blogs', href: '/dashboard/blogs', icon: FileText },
-  { label: 'Projects', href: '/dashboard/projects', icon: Folder },
+  { label: 'Blogs', href: '/blogs', icon: FileText },
+  { label: 'Project', href: '/project', icon: Folder },
   { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
-  { label: 'Skills', href: '/dashboard/skills', icon: Layers },
-  { label: 'Other', href: '/dashboard/other', icon: Settings },
+  { label: 'Skills', href: '/skills', icon: Layers },
+  { label: 'Other', href: '/other', icon: Settings },
 ];
 
 export default function Sidebar() {
