@@ -1,54 +1,60 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import ProjectList from '@/components/modules/projects/ProjectList';
+import { config } from '@/config';
 import Link from 'next/link';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 
 export default function ProjectsPage() {
- const [projects, setProjects] = useState<any[]>([
-  {
-    id: 1,
-    name: 'Portfolio Website',
-    description: 'A personal portfolio built with Next.js and Tailwind CSS.',
-  },
-  {
-    id: 2,
-    name: 'Blog CMS',
-    description: 'A full-featured content management system for writing blogs.',
-  },
-  {
-    id: 3,
-    name: 'Task Manager App',
-    description: 'A MERN stack app to manage daily tasks and priorities.',
-  },
-  {
-    id: 4,
-    name: 'E-commerce Store',
-    description: 'A responsive online store built with React, Redux, and Stripe.',
-  },
-  {
-    id: 5,
-    name: 'Chat App',
-    description: 'A real-time chat application using Socket.IO and Express.',
-  },
-]);
+ const [projects, setProjects] = useState<any[]>([]);
+ const  [loading, setLoading] = useState<boolean>(false);
 
 
+ const fetchProjects=async()=>{
+  setLoading(true);
 
+  try{
+    const response = await fetch(`${config.sb_backOfficeApiUrl}/projects`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+      },
+    });
 
+    if (!response.ok) {
+      throw new Error('Failed to fetch projects');
+    }
+    const data = await response.json();
+    setProjects(data?.data || []);
+  }catch(e){
+    console.error('Error fetching projects:', e);
+  }finally{
+    setLoading(false);
+  }
 
+ }
 
+  // Fetch projects when the component mounts
 
+  useEffect(()=>{
+
+    fetchProjects();
+
+  },[])
 
 
 
 
   const handleDelete = (id: number) => {
-    setProjects((prev) => prev.filter((p) => p.id !== id));
+    setProjects((prev) => prev?.filter((p) => p.id !== id));
   };
 
+  if (loading) {
+    return <div className="text-center">Loading projects...</div>;
+  }
 
 
   return (

@@ -9,10 +9,11 @@ interface ProjectCardProps {
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const  ProjectCard:React.FC<ProjectCardProps> =({ project, onEdit, onDelete }: any)=> {
+
   return (
     <div className="bg-white shadow-md rounded-lg p-4 relative">
-      <h3 className="text-lg font-semibold">{project.name}</h3>
-      <p className="text-sm text-gray-600">{project.description}</p>
+      <h3 className="text-lg font-semibold">{project?.title}</h3>
+      <p className="text-sm text-gray-600">{project?.description}</p>
 
       <div className="absolute top-2 right-2 flex gap-2">
         <button
