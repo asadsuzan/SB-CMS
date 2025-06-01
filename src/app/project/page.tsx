@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 export default function ProjectsPage() {
  const [projects, setProjects] = useState<any[]>([]);
  const  [loading, setLoading] = useState<boolean>(false);
+ const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
 
  const fetchProjects=async()=>{
@@ -48,8 +49,32 @@ export default function ProjectsPage() {
 
 
 
-  const handleDelete = (id: number) => {
-    setProjects((prev) => prev?.filter((p) => p.id !== id));
+  const handleDelete = async(id: string) => {
+    console.log('project id:' ,id)
+
+    setIsDeleting(true)
+
+    
+    try{
+
+      const response = await fetch(`${config.sb_backOfficeApiUrl}/projects/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+      }})
+
+      if (!response.ok) {
+        throw new Error('Failed to delete project');
+      }
+      const data = await response.json();
+      console.log('Project deleted successfully:', data);
+    }catch(e){console.log('Error deleting project:', e)}finally{
+      setIsDeleting(false);
+fetchProjects();
+    }
+    
+
   };
 
   if (loading) {

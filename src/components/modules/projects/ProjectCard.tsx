@@ -23,7 +23,7 @@ export const  ProjectCard:React.FC<ProjectCardProps> =({ project, onEdit, onDele
           <Pencil size={18} />
         </button>
         <button
-          onClick={() => onDelete(project.id)}
+          onClick={() => onDelete(project.slug)}
           className="text-red-600 hover:text-red-800"
         >
           <Trash size={18} />
