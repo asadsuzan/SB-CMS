@@ -61,10 +61,14 @@ export default function ProjectForm() {
       deployment: "",
       thirdPartyAPI: "",
     },
-    lessonsLearned: [""]
+    lessonsLearned: [""],
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
-const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+
+  const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
     section: S,
     field: F,
     value: FormType[S][F]
@@ -129,27 +133,26 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
     });
   };
 
-
-
-
   // Improved file handling with validation
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    
+
     const files = Array.from(e.target.files);
-    const validFiles = files.filter(file => 
-      file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024 // 5MB limit
-    ).slice(0, 3);
-    
+    const validFiles = files
+      .filter(
+        (file) => file.type.startsWith("image/") && file.size <= 5 * 1024 * 1024 // 5MB limit
+      )
+      .slice(0, 3);
+
     if (validFiles.length < files.length) {
       alert("Only image files under 5MB are accepted. Max 3 files allowed.");
     }
-    
-    setForm(prev => ({ ...prev, screenshots: validFiles }));
+
+    setForm((prev) => ({ ...prev, screenshots: validFiles }));
   };
 
   const removeScreenshot = (index: number) => {
-    setForm(prev => {
+    setForm((prev) => {
       const updatedFiles = [...prev.screenshots];
       updatedFiles.splice(index, 1);
       return { ...prev, screenshots: updatedFiles };
@@ -161,7 +164,7 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
     index: number,
     field?: F
   ) => {
-    setForm(prev => {
+    setForm((prev) => {
       if (field) {
         const updatedArray = [...(prev[section][field] as unknown as string[])];
         updatedArray.splice(index, 1);
@@ -187,97 +190,164 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
     fileInputRef.current?.click();
   };
 
-  // ... handleSubmit remains unchanged ...
-    const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log("Submitting form:", form);
+    setIsSubmitting(true);
+    setSubmitMessage(null);
+
+    const formData = new FormData();
+
+    // Append JSON data
+    // Exclude screenshots from the JSON part as they are handled separately
+    const { screenshots, ...jsonData } = form;
+    formData.append("data", JSON.stringify(jsonData));
+
+    // Append screenshot files
+    screenshots.forEach((file) => {
+      formData.append("screenshots", file);
+    });
+
+    try {
+      const response = await fetch("http://localhost:5000/api/v1/projects", {
+        method: "POST",
+        body: formData, // No 'Content-Type' header needed for FormData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to submit project");
+      }
+
+      const result = await response.json();
+      console.log("Project submitted successfully:", result);
+      setSubmitMessage({ type: 'success', text: 'Project submitted successfully!' });
+      // Optionally reset the form here
+      // setForm(...)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      console.error("Error submitting form:", error);
+      setSubmitMessage({ type: 'error', text: error.message || 'An unexpected error occurred.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 p-6 max-w-4xl mx-auto bg-white rounded-xl shadow-md">
-      <h2 className="text-3xl font-bold text-gray-800 mb-6">Create New Project</h2>
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-8 p-6 max-w-4xl mx-auto bg-white rounded-xl shadow-md"
+    >
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">
+        Create New Project
+      </h2>
+
+      {submitMessage && (
+        <div className={`p-3 rounded-md ${submitMessage.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          {submitMessage.text}
+        </div>
+      )}
 
       {/* Section: Basic Information */}
       <Section title="Basic Information">
-        <InputField 
-          label="Project Title" 
+        <InputField
+          label="Project Title"
           value={form.basicInfo.title}
-          onChange={(e: { target: { value: string; }; }) => handleChange("basicInfo", "title", e.target.value)}
+          onChange={(e: { target: { value: string } }) =>
+            handleChange("basicInfo", "title", e.target.value)
+          }
           required
         />
-        <InputField 
-          label="URL Slug" 
+        <InputField
+          label="URL Slug"
           value={form.basicInfo.slug}
-          onChange={(e: { target: { value: string; }; }) => handleChange("basicInfo", "slug", e.target.value)}
+          onChange={(e: { target: { value: string } }) =>
+            handleChange("basicInfo", "slug", e.target.value)
+          }
           placeholder="e.g., my-awesome-project"
           required
         />
-        <TextAreaField 
-          label="Description" 
+        <TextAreaField
+          label="Description"
           value={form.basicInfo.description}
-          onChange={(e: { target: { value: string; }; }) => handleChange("basicInfo", "description", e.target.value)}
+          onChange={(e: { target: { value: string } }) =>
+            handleChange("basicInfo", "description", e.target.value)
+          }
           required
         />
       </Section>
 
       {/* Section: Project Metadata */}
       <Section title="Project Metadata">
-        <SelectField 
+        <SelectField
           label="Project Status"
           value={form.meta.status}
-          onChange={(e: { target: { value: string; }; }) => handleChange("meta", "status", e.target.value as TProjectStatus)}
+          onChange={(e: { target: { value: string } }) =>
+            handleChange("meta", "status", e.target.value as TProjectStatus)
+          }
           options={[
             { value: "completed", label: "Completed" },
             { value: "in-progress", label: "In Progress" },
-            { value: "planned", label: "Planned" }
+            { value: "planned", label: "Planned" },
           ]}
         />
-        <InputField 
-          label="Client" 
+        <InputField
+          label="Client"
           value={form.meta.client}
-          onChange={(e: { target: { value: string; }; }) => handleChange("meta", "client", e.target.value)}
+          onChange={(e: { target: { value: string } }) =>
+            handleChange("meta", "client", e.target.value)
+          }
         />
-        <InputField 
-          label="Timeframe" 
+        <InputField
+          label="Timeframe"
           value={form.meta.timeframe}
-          onChange={(e: { target: { value: string; }; }) => handleChange("meta", "timeframe", e.target.value)}
+          onChange={(e: { target: { value: string } }) =>
+            handleChange("meta", "timeframe", e.target.value)
+          }
           placeholder="e.g., Oct 2023 – Jan 2024"
         />
       </Section>
 
       {/* Section: Project Links */}
       <Section title="Project Links">
-        <InputField 
-          label="GitHub URL" 
+        <InputField
+          label="GitHub URL"
           type="url"
           value={form.links.githubUrl}
-          onChange={(e: { target: { value: string; }; }) => handleChange("links", "githubUrl", e.target.value)}
+          onChange={(e: { target: { value: string } }) =>
+            handleChange("links", "githubUrl", e.target.value)
+          }
           placeholder="https://github.com/your-project"
         />
-        <InputField 
-          label="Live Demo URL" 
+        <InputField
+          label="Live Demo URL"
           type="url"
           value={form.links.liveDemoUrl}
-          onChange={(e: { target: { value: string; }; }) => handleChange("links", "liveDemoUrl", e.target.value)}
+          onChange={(e: { target: { value: string } }) =>
+            handleChange("links", "liveDemoUrl", e.target.value)
+          }
           placeholder="https://your-project-demo.com"
         />
       </Section>
 
       {/* Section: Project Overview */}
       <Section title="Project Overview">
-        <TextAreaField 
-          label="Context" 
+        <TextAreaField
+          label="Context"
           value={form.overview.context}
-          onChange={(e: { target: { value: string; }; }) => handleChange("overview", "context", e.target.value)}
+          onChange={(e: { target: { value: string } }) =>
+            handleChange("overview", "context", e.target.value)
+          }
           required
         />
-        <TextAreaField 
-          label="Target Audience" 
+        <TextAreaField
+          label="Target Audience"
           value={form.overview.targetAudience}
-          onChange={(e: { target: { value: string; }; }) => handleChange("overview", "targetAudience", e.target.value)}
+          onChange={(e: { target: { value: string } }) =>
+            handleChange("overview", "targetAudience", e.target.value)
+          }
         />
-        
+
         <div className="space-y-3">
           <Label>Objectives</Label>
           {form.overview.objectives.map((item, i) => (
@@ -285,7 +355,9 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
               <input
                 className="input flex-1"
                 value={item}
-                onChange={(e) => handleArrayChange("overview", i, e.target.value, "objectives")}
+                onChange={(e) =>
+                  handleArrayChange("overview", i, e.target.value, "objectives")
+                }
                 placeholder={`Objective ${i + 1}`}
                 required
               />
@@ -299,8 +371,8 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
               </button>
             </div>
           ))}
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="btn-secondary"
             onClick={() => addArrayItem("overview", "objectives")}
             disabled={form.overview.objectives.length >= 5}
@@ -330,8 +402,8 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
             </button>
           </div>
         ))}
-        <button 
-          type="button" 
+        <button
+          type="button"
           className="btn-secondary"
           onClick={() => addArrayItem("features")}
           disabled={form.features.length >= 10}
@@ -346,9 +418,15 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
           {Object.entries(form.technologies).map(([key, value]) => (
             <InputField
               key={key}
-              label={key.replace(/([A-Z])/g, ' $1').toUpperCase()}
+              label={key.replace(/([A-Z])/g, " $1").toUpperCase()}
               value={value}
-              onChange={(e: { target: { value: string; }; }) => handleChange("technologies", key as keyof typeof form.technologies, e.target.value)}
+              onChange={(e: { target: { value: string } }) =>
+                handleChange(
+                  "technologies",
+                  key as keyof typeof form.technologies,
+                  e.target.value
+                )
+              }
             />
           ))}
         </div>
@@ -361,7 +439,9 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
             <input
               className="input flex-1"
               value={item}
-              onChange={(e) => handleArrayChange("lessonsLearned", i, e.target.value)}
+              onChange={(e) =>
+                handleArrayChange("lessonsLearned", i, e.target.value)
+              }
               placeholder={`Lesson ${i + 1}`}
             />
             <button
@@ -374,8 +454,8 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
             </button>
           </div>
         ))}
-        <button 
-          type="button" 
+        <button
+          type="button"
           className="btn-secondary"
           onClick={() => addArrayItem("lessonsLearned")}
           disabled={form.lessonsLearned.length >= 10}
@@ -394,7 +474,7 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
               onClick={triggerFileInput}
               disabled={form.screenshots.length >= 3}
             >
-              {form.screenshots.length > 0 ? 'Add More' : 'Upload Images'}
+              {form.screenshots.length > 0 ? "Add More" : "Upload Images"}
             </button>
             <input
               type="file"
@@ -404,9 +484,7 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
               onChange={handleFileChange}
               className="hidden"
             />
-            <p className="text-sm text-gray-500">
-              Max 3 images (5MB each)
-            </p>
+            <p className="text-sm text-gray-500">Max 3 images (5MB each)</p>
           </div>
 
           {form.screenshots.length > 0 && (
@@ -428,12 +506,23 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
                       className="bg-red-500 text-white rounded-full p-1 shadow-lg"
                       aria-label="Remove image"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 truncate mt-1">{file.name}</p>
+                  <p className="text-xs text-gray-500 truncate mt-1">
+                    {file.name}
+                  </p>
                 </div>
               ))}
             </div>
@@ -442,11 +531,12 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
       </Section>
 
       <div className="pt-6">
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className="btn-primary w-full py-3 text-lg"
+          disabled={isSubmitting}
         >
-          Submit Project
+          {isSubmitting ? "Submitting..." : "Submit Project"}
         </button>
       </div>
     </form>
@@ -454,7 +544,13 @@ const handleChange = <S extends SectionKeys, F extends keyof FormType[S]>(
 }
 
 // Helper Components
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Section = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
   <div className="border-b border-gray-200 pb-6">
     <h3 className="text-xl font-semibold text-gray-700 mb-4">{title}</h3>
     <div className="space-y-4 pl-1">{children}</div>
@@ -462,7 +558,9 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 );
 
 const Label = ({ children }: { children: React.ReactNode }) => (
-  <label className="block text-sm font-medium text-gray-700 mb-1">{children}</label>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    {children}
+  </label>
 );
 
 type InputFieldProps = {
@@ -478,8 +576,8 @@ const InputField = ({
   label,
   value,
   onChange,
-  type = 'text',
-  placeholder = '',
+  type = "text",
+  placeholder = "",
   required = false,
 }: InputFieldProps) => (
   <div>
@@ -534,11 +632,7 @@ const SelectField = ({
 }: SelectFieldProps) => (
   <div>
     <Label>{label}</Label>
-    <select
-      value={value}
-      onChange={onChange}
-      className="input w-full"
-    >
+    <select value={value} onChange={onChange} className="input w-full">
       {options.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}
