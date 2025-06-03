@@ -5,7 +5,15 @@ import { ProjectCard } from "./ProjectCard";
 
 
 
-export default function ProjectList({ projects, onEdit, onDelete }: any) {
+export default function ProjectList({ projects, onEdit, onDelete,isLoading,isDeleting }: any) {
+
+if(isLoading) {
+  return (
+    <div className="flex justify-center items-center h-full">
+      <p className="text-gray-500">Loading projects...</p>
+    </div>
+  );
+}
   if (!projects?.length) {
     return <p className="text-gray-500">No projects yet. Add one.</p>;
   }
@@ -19,6 +27,7 @@ export default function ProjectList({ projects, onEdit, onDelete }: any) {
           project={project?.basicInfo}
           onEdit={onEdit}
           onDelete={onDelete}
+          isDeleting={isDeleting}
         />
       ))}
     </div>

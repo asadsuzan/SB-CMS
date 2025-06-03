@@ -6,10 +6,12 @@ interface ProjectCardProps {
   project: any;
   onEdit: (project: any) => void;
   onDelete: (project: any) => void;
+  isDeleting?: boolean;
+  isLoading?: boolean;
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const  ProjectCard:React.FC<ProjectCardProps> =({ project, onEdit, onDelete }: any)=> {
-console.log("ProjectCard props:", project, onEdit, onDelete);
+export const  ProjectCard:React.FC<ProjectCardProps> =({ project, onEdit, onDelete,isDeleting=false }: any)=> {
+console.log("ProjectCard", project);
   return (
     <div className="bg-white shadow-md rounded-lg p-4 relative">
       <h3 className="text-lg font-semibold">{project?.title}</h3>
@@ -22,12 +24,22 @@ console.log("ProjectCard props:", project, onEdit, onDelete);
         >
           <Pencil size={18} />
         </button>
-        <button
-          onClick={() => onDelete(project?.slug)}
-          className="text-red-600 hover:text-red-800"
-        >
-          <Trash size={18} />
-        </button>
+      {
+          !isDeleting && (
+            <button
+              onClick={() => onDelete(project.slug)}
+              className="text-red-600 hover:text-red-800"
+            >
+              <Trash size={18} />
+            </button>
+          )
+        }
+        {isDeleting && (
+          <span className="text-gray-500 spinner-border animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full align-text-bottom" role="status" aria-label="Loading">
+
+          </span>
+        )
+      }
       </div>
     </div>
   );
