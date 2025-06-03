@@ -3,6 +3,7 @@
 import ProjectList from '@/components/modules/projects/ProjectList';
 import { config } from '@/config';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { useEffect, useState } from 'react';
 
@@ -11,7 +12,7 @@ export default function ProjectsPage() {
  const [projects, setProjects] = useState<any[]>([]);
  const  [loading, setLoading] = useState<boolean>(false);
  const [isDeleting, setIsDeleting] = useState<boolean>(false);
-
+const  router = useRouter()
 
  const fetchProjects=async()=>{
   setLoading(true);
@@ -41,9 +42,7 @@ export default function ProjectsPage() {
   // Fetch projects when the component mounts
 
   useEffect(()=>{
-
     fetchProjects();
-
   },[])
 
 
@@ -77,11 +76,17 @@ fetchProjects();
 
   };
 
+  const handleEdit = (slug:string)=>{
+ 
+    router.push(`/project/${slug}/edit-project/`);
+  }
+
   if (loading) {
     return <div className="text-center">Loading projects...</div>;
   }
 
 
+console.log('Projects:', projects);
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -96,6 +101,7 @@ fetchProjects();
 
       <ProjectList
         projects={projects}
+        onEdit={handleEdit}
       
         onDelete={handleDelete}
       />
